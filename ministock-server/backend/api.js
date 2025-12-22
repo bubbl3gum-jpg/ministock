@@ -7,19 +7,26 @@ const router = express.Router();
 const db = require('./db');
 const { v4: uuidv4 } = require('uuid'); 
 
+// CRITICAL: Import the middleware to fix the "Token" issue
+// Ensure you have auth.js in the same folder!
+const { authenticateToken } = require('./auth');
+
 // ----------------------------------------------------------------
-// ITEM ROUTES (NO AUTHENTICATION REQUIRED)
+// ITEM ROUTES (AUTHENTICATION REQUIRED)
 // ----------------------------------------------------------------
 
-// GET /api/items: List all items (with optional search)
-router.get('/items', (req, res) => {
+// GET /api/items: List all items (ONLY for the logged-in user)
+router.get('/items', authenticateToken, (req, res) => {
+    const userId = req.user.userId; // Extracted from token
     const searchTerm = req.query.search;
-    let sql = 'SELECT * FROM Item';
-    let params = [];
+    
+    // CHANGE: Filter by user_id
+    let sql = 'SELECT * FROM Item WHERE user_id = ?';
+    let params = [userId];
 
     if (searchTerm) {
         // Search by name OR category
-        sql += ' WHERE name LIKE ? OR category LIKE ?';
+        sql += ' AND (name LIKE ? OR category LIKE ?)';
         const likeTerm = `%${searchTerm}%`;
         params.push(likeTerm, likeTerm);
     }
@@ -31,45 +38,41 @@ router.get('/items', (req, res) => {
             console.error('❌ GET /items error:', err.message);
             return res.status(500).json({ status: 'error', message: 'Failed to fetch items: ' + err.message });
         }
-        console.log(`✅ GET /items: Retrieved ${rows ? rows.length : 0} items`);
+        console.log(`✅ GET /items: Retrieved ${rows ? rows.length : 0} items for user ${userId}`);
         res.json({ status: 'ok', data: rows || [] });
     });
 });
 
 
-// POST /api/items: Create a new item
-router.post('/items', (req, res) => {
+// POST /api/items: Create a new item (Stamped with user_id)
+router.post('/items', authenticateToken, (req, res) => {
+    const userId = req.user.userId;
     const { name, category, restock_level } = req.body;
     const id = uuidv4();
     const currentTimestamp = new Date().toISOString();
 
     if (!name || !restock_level) {
-        console.warn('⚠️  POST /items: Missing required fields - name or restock_level');
+        console.warn('⚠️  POST /items: Missing required fields');
         return res.status(400).json({ status: 'error', message: 'Name and Restock Level are required.' });
     }
 
+    // CHANGE: Insert user_id
     const sql = `
-        INSERT INTO Item (id, name, category, stock_quantity, restock_level, last_updated) 
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO Item (id, user_id, name, category, stock_quantity, restock_level, last_updated) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
-    const params = [id, name, category || 'Uncategorized', 0, restock_level, currentTimestamp];
+    const params = [id, userId, name, category || 'Uncategorized', 0, restock_level, currentTimestamp];
 
     db.run(sql, params, function(err) {
         if (err) {
-    console.error('❌ POST /items error:', err.message);
-    // Check if it's a duplicate name error
-    if (err.message.includes('UNIQUE constraint failed')) {
-        return res
-            .status(409)
-            .json({ status: 'error', message: 'Item name already exists' });
-    }
-    return res
-        .status(500)
-        .json({ status: 'error', message: 'Failed to create item: ' + err.message });
-}
-
+            console.error('❌ POST /items error:', err.message);
+            if (err.message.includes('UNIQUE constraint failed')) {
+                return res.status(409).json({ status: 'error', message: 'Item name already exists' });
+            }
+            return res.status(500).json({ status: 'error', message: 'Failed to create item: ' + err.message });
+        }
         
-        console.log(`✅ POST /items: Created item "${name}" with ID ${id}`);
+        console.log(`✅ POST /items: Created item "${name}" for user ${userId}`);
         res.status(201).json({ 
             status: 'ok', 
             message: 'Item created successfully.', 
@@ -78,78 +81,89 @@ router.post('/items', (req, res) => {
     });
 });
 
-// POST /api/items/:id/adjust: Update stock quantity
-router.post('/items/:id/adjust', (req, res) => {
+// POST /api/items/:id/adjust: Update stock quantity (Only if user owns item)
+router.post('/items/:id/adjust', authenticateToken, (req, res) => {
+    const userId = req.user.userId;
     const itemId = req.params.id;
-    // The frontend will now send change_amount (positive for restock, negative for sale) and reason
     const { change_amount } = req.body;
     const change = parseInt(change_amount, 10);
 
     if (isNaN(change) || change === 0) {
-        console.warn(`⚠️  POST /items/:id/adjust: Invalid change_amount for item ${itemId}`);
         return res.status(400).json({ status: 'error', message: 'A valid, non-zero change amount is required.' });
     }
 
-    // 1. Get current stock
-    db.get('SELECT stock_quantity FROM Item WHERE id = ?', [itemId], (err, row) => {
-        if (err) {
-            console.error(`❌ POST /items/:id/adjust error (GET): ${err.message}`);
-            return res.status(500).json({ status: 'error', message: 'Database error: ' + err.message });
-        }
+    // 1. Get current stock (Check user_id)
+    db.get('SELECT stock_quantity FROM Item WHERE id = ? AND user_id = ?', [itemId, userId], (err, row) => {
+        if (err) return res.status(500).json({ status: 'error', message: 'Database error' });
         
         if (!row) {
-            console.warn(`⚠️  POST /items/:id/adjust: Item not found - ${itemId}`);
-            return res.status(404).json({ status: 'error', message: 'Item not found.' });
+            return res.status(404).json({ status: 'error', message: 'Item not found or unauthorized.' });
         }
 
         const currentStock = row.stock_quantity;
-
-        // Check for sufficient stock if it's a sale (negative change_amount)
         if (change < 0 && currentStock < Math.abs(change)) {
-            console.warn(`⚠️  POST /items/:id/adjust: Insufficient stock for item ${itemId}. Current: ${currentStock}, Sale Amount: ${Math.abs(change)}`);
             return res.status(400).json({ status: 'error', message: `Stock not enough. Only ${currentStock} available.` });
         }
 
         const newStock = row.stock_quantity + change;
-
         const currentTimestamp = new Date().toISOString();
 
-        // 2. Update the stock quantity
-        db.run('UPDATE Item SET stock_quantity = ?, last_updated = ? WHERE id = ?', [newStock, currentTimestamp, itemId], (updateErr) => {
-            if (updateErr) {
-                console.error(`❌ POST /items/:id/adjust error (UPDATE): ${updateErr.message}`);
-                return res.status(500).json({ status: 'error', message: 'Database error: ' + updateErr.message });
-            }
+        // 2. Update (Check user_id again for safety)
+        db.run('UPDATE Item SET stock_quantity = ?, last_updated = ? WHERE id = ? AND user_id = ?', 
+            [newStock, currentTimestamp, itemId, userId], (updateErr) => {
+            if (updateErr) return res.status(500).json({ status: 'error', message: 'Database error' });
 
-            console.log(`✅ [STOCK ADJUSTMENT] Item: ${itemId}, Change: ${change}, Old Stock: ${row.stock_quantity}, New Stock: ${newStock}`);
-
-            // Send back the updated item data
-            const updatedItem = { ...row, stock_quantity: newStock, id: itemId };
-            res.json({ status: 'ok', message: 'Stock adjusted successfully.', data: updatedItem });
+            res.json({ status: 'ok', message: 'Stock adjusted successfully.', data: { id: itemId, stock_quantity: newStock } });
         });
     });
 });
 
-// DELETE /api/items/:id: Delete an item (Optional for demo, but good practice)
-router.delete('/items/:id', (req, res) => {
+// DELETE /api/items/:id: Delete an item
+router.delete('/items/:id', authenticateToken, (req, res) => {
+    const userId = req.user.userId;
     const itemId = req.params.id;
 
-    db.run('DELETE FROM Item WHERE id = ?', [itemId], function(err) {
-        if (err) {
-            console.error(`❌ DELETE /items/:id error: ${err.message}`);
-            return res.status(500).json({ status: 'error', message: 'Database error: ' + err.message });
-        }
+    // CHANGE: Ensure user only deletes their own items
+    db.run('DELETE FROM Item WHERE id = ? AND user_id = ?', [itemId, userId], function(err) {
+        if (err) return res.status(500).json({ status: 'error', message: 'Database error' });
         
         if (this.changes === 0) {
-            console.warn(`⚠️  DELETE /items/:id: Item not found - ${itemId}`);
-            return res.status(404).json({ status: 'error', message: 'Item not found.' });
+            return res.status(404).json({ status: 'error', message: 'Item not found or unauthorized.' });
         }
         
-        console.log(`✅ DELETE /items/:id: Item ${itemId} deleted successfully.`);
-        // Return 204 No Content on successful delete (no response body)
+        console.log(`✅ DELETE /items/:id: Item ${itemId} deleted.`);
         res.sendStatus(204);
     });
 });
 
+// GET /api/export: Download CSV (Re-adding this feature for you)
+router.get('/export', authenticateToken, (req, res) => {
+    const userId = req.user.userId;
+
+    // Filter by user_id
+    db.all("SELECT * FROM Item WHERE user_id = ?", [userId], (err, rows) => {
+        if (err) {
+            console.error('❌ Export error:', err.message);
+            return res.status(500).send('Error fetching data');
+        }
+
+        const headers = ['ID', 'Name', 'Category', 'Stock', 'Restock Level', 'Last Updated'];
+        const csvRows = rows.map(row => {
+            return [
+                `"${row.id}"`,
+                `"${row.name.replace(/"/g, '""')}"`, 
+                `"${row.category ? row.category.replace(/"/g, '""') : ''}"`,
+                row.stock_quantity,
+                row.restock_level,
+                `"${new Date(row.last_updated).toLocaleString()}"`
+            ].join(',');
+        });
+
+        const csvString = [headers.join(','), ...csvRows].join('\n');
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="inventory_export.csv"');
+        res.status(200).send(csvString);
+    });
+});
 
 module.exports = router;

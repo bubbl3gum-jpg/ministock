@@ -31,14 +31,17 @@ const db = new sqlite3.Database(DB_SOURCE, (err) => {
             });
 
             // SQL statement to create the 'Item' table if it doesn't exist
+            // CHANGE: Added user_id column
             const createItemTableSql = `
                 CREATE TABLE IF NOT EXISTS Item (
                     id TEXT PRIMARY KEY,
-                    name TEXT UNIQUE NOT NULL,
+                    user_id INTEGER, 
+                    name TEXT NOT NULL,
                     category TEXT DEFAULT 'Uncategorized',
                     stock_quantity INTEGER DEFAULT 0,
                     restock_level INTEGER NOT NULL,
-                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(user_id) REFERENCES users(id)
                 )
             `;
             db.run(createItemTableSql, (err) => {
@@ -59,7 +62,7 @@ const db = new sqlite3.Database(DB_SOURCE, (err) => {
                     console.error("❌ Error hashing demo password", err);
                     return;
                 }
-                // 'INSERT OR IGNORE' will not insert if the email already exists, preventing errors on restart
+                // 'INSERT OR IGNORE' will not insert if the email already exists
                 const insertSql = `INSERT OR IGNORE INTO users (email, password) VALUES (?, ?)`;
                 db.run(insertSql, [demoEmail, hashedPassword], function(err) {
                     if (err) {

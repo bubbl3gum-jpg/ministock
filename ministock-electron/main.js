@@ -13,8 +13,11 @@ function createWindow() {
         }
     });
 
-    mainWindow.loadFile('index.html');
+    mainWindow.loadURL('http://localhost:5173');
+    
+    // This opens the side console for debugging. 
     mainWindow.webContents.openDevTools();
+
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
