@@ -1,0 +1,197 @@
+/* /Users/yuiii/ministock-server-main/frontend/src/BubbleBiz.css */
+
+/* --- Layout & Background --- */
+body {
+  margin: 0;
+  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, #63b3ed 0%, #f6e6c5 100%);
+  color: #4a5568; /* A softer default text color */
+}
+
+.bubble-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start; /* Align to top */
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  box-sizing: border-box;
+}
+
+/* --- Animated Bubbles --- */
+.bubbles {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.25;
+  background: linear-gradient(135deg, #6dd5ed 0%, #f779a1 100%);
+  animation: float 12s infinite ease-in-out;
+}
+
+.bubble1 { width: 120px; height: 120px; left: 10vw; top: 20vh; animation-delay: 0s; }
+.bubble2 { width: 80px; height: 80px; left: 70vw; top: 10vh; animation-delay: 3s; }
+.bubble3 { width: 60px; height: 60px; left: 50vw; top: 70vh; animation-delay: 6s; }
+.bubble4 { width: 100px; height: 100px; left: 80vw; top: 60vh; animation-delay: 2s; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-30px) scale(1.1); }
+}
+
+/* --- Card & Content --- */
+.bubble-card {
+  background: #fff;
+  border-radius: 2rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  padding: 2rem 2.5rem;
+  width: 100%;
+  max-width: 800px;
+  text-align: left;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 1.5rem;
+}
+
+.bubble-card h1, .bubble-card h2 {
+  color: #3a8dde;
+  letter-spacing: 0.5px;
+  margin-top: 0;
+}
+
+.bubble-card h1 {
+  font-size: 2.2rem;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.bubble-card h2 {
+  font-size: 1.5rem;
+  border-bottom: 2px solid #f0f4f8;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* --- Forms & Buttons --- */
+.bubble-form {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  align-items: end;
+}
+
+.bubble-input {
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  outline: none;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.bubble-input:focus {
+  border-color: #6dd5ed;
+  box-shadow: 0 0 0 3px rgba(109, 213, 237, 0.35);
+}
+
+.bubble-btn {
+  background: linear-gradient(90deg, #6dd5ed 0%, #977140 100%);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.8rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(247,121,161,0.2);
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  white-space: nowrap;
+}
+
+.bubble-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 32px rgba(109,213,237,0.25);
+}
+
+/* --- Table --- */
+.bubble-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.bubble-table th, .bubble-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.bubble-table th {
+  color: #4a5568;
+  font-weight: 600;
+}
+
+.bubble-table tbody tr:hover {
+  background-color: #f7fafc;
+}
+
+/* Center the BubbleBiz app on the gradient background */
+.bubblebiz-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32px 16px;
+}
+
+/* Main card that contains the entire dashboard */
+.bubblebiz-card {
+  width: 100%;
+  max-width: 1100px;
+  border-radius: 24px;
+  padding: 32px 32px 40px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+}
+
+/* Optional: slightly nicer table styling */
+.bubblebiz-card table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bubblebiz-card th,
+.bubblebiz-card td {
+  padding: 8px 12px;
+}
+
+.bubblebiz-card thead {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.bubblebiz-card tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Low stock = red text (override white text inside the card) */
+.bubblebiz-card .low-stock-text {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+
+
+

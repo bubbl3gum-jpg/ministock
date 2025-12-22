@@ -1,0 +1,29 @@
+# Ignore ALL node_modules in repo (root + backend + frontend + future)
+node_modules/
+**/node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+server.log
+
+# Build output
+dist/
+build/
+out/
+coverage/
+.vite/
+
+# Env/config
+.env
+.env.local
+.env.*.local
+git 
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

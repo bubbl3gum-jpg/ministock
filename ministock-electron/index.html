@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniStock Desktop</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Layout & Background */
+        body {
+            margin: 0;
+            font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #63b3ed 0%, #f6e6c5 100%);
+            color: #4a5568;
+        }
+
+        .bubblebiz-page {
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 32px 16px;
+        }
+
+        /* Animated Bubbles */
+        .bubbles {
+            position: fixed;
+            z-index: 0;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.25;
+            background: linear-gradient(135deg, #6dd5ed 0%, #f779a1 100%);
+            animation: float 12s infinite ease-in-out;
+        }
+
+        .bubble1 { width: 120px; height: 120px; left: 10vw; top: 20vh; animation-delay: 0s; }
+        .bubble2 { width: 80px; height: 80px; left: 70vw; top: 10vh; animation-delay: 3s; }
+        .bubble3 { width: 60px; height: 60px; left: 50vw; top: 70vh; animation-delay: 6s; }
+        .bubble4 { width: 100px; height: 100px; left: 80vw; top: 60vh; animation-delay: 2s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-30px) scale(1.1); }
+        }
+
+        /* Main card */
+        .bubblebiz-card {
+            width: 100%;
+            max-width: 1100px;
+            border-radius: 24px;
+            padding: 32px 32px 40px;
+            background: rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+            color: #ffffff;
+            position: relative;
+            z-index: 1;
+        }
+
+        .bubblebiz-card h1 {
+            font-size: 2.2rem;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+
+        .bubblebiz-card h2 {
+            font-size: 1.5rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            color: #ffffff;
+        }
+
+        /* Forms */
+        .bubblebiz-input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 999px;
+            padding: 0.75rem 1.25rem;
+            font-size: 1rem;
+            color: #ffffff;
+            outline: none;
+            transition: box-shadow 0.15s, border-color 0.15s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .bubblebiz-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .bubblebiz-input:focus {
+            border-color: #6dd5ed;
+            box-shadow: 0 0 0 3px rgba(109, 213, 237, 0.35);
+        }
+
+        .bubblebiz-button {
+            background: linear-gradient(90deg, #7BD5F5 0%, #C86DD7 50%, #FF758C 100%);
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 4px 16px rgba(247,121,161,0.2);
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .bubblebiz-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 32px rgba(109,213,237,0.25);
+        }
+
+        .bubblebiz-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Table */
+        .bubblebiz-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .bubblebiz-table th, .bubblebiz-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .bubblebiz-table th {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .bubblebiz-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .bubblebiz-table tbody tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        /* Low stock styling */
+        .low-stock-text {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        /* Error styling */
+        .error-banner {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.6);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            color: #ffffff;
+        }
+
+        /* Hidden class */
+        .hidden {
+            display: none;
+        }
+
+        /* Flex utilities */
+        .flex {
+            display: flex;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .gap-2 {
+            gap: 0.5rem;
+        }
+
+        .gap-4 {
+            gap: 1rem;
+        }
+
+        .flex-1 {
+            flex: 1;
+        }
+
+        .w-32 {
+            width: 8rem;
+        }
+
+        /* Utility classes */
+        .text-center { text-align: center; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .space-y-4 > * + * { margin-top: 1rem; }
+        .font-medium { font-weight: 500; }
+        .text-xs { font-size: 0.75rem; }
+        .text-sm { font-size: 0.875rem; }
+        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .border { border-width: 1px; }
+        .border-b { border-bottom-width: 1px; }
+        .border-white/10 { border-color: rgba(255, 255, 255, 0.1); }
+        .border-white/20 { border-color: rgba(255, 255, 255, 0.2); }
+        .border-white/25 { border-color: rgba(255, 255, 255, 0.25); }
+        .border-red-400/70 { border-color: rgba(231, 76, 60, 0.7); }
+        .bg-white/5 { background-color: rgba(255, 255, 255, 0.05); }
+        .bg-white/10 { background-color: rgba(255, 255, 255, 0.1); }
+        .bg-white/20 { background-color: rgba(255, 255, 255, 0.2); }
+        .bg-red-500/30 { background-color: rgba(231, 76, 60, 0.3); }
+        .bg-red-500/50 { background-color: rgba(231, 76, 60, 0.5); }
+        .text-white/70 { color: rgba(255, 255, 255, 0.7); }
+        .text-white/80 { color: rgba(255, 255, 255, 0.8); }
+        .hover\:bg-white/20:hover { background-color: rgba(255, 255, 255, 0.2); }
+        .hover\:bg-red-500/50:hover { background-color: rgba(231, 76, 60, 0.5); }
+        .transition { transition: all 0.15s ease; }
+        .rounded-full { border-radius: 9999px; }
+        .inline-flex { display: inline-flex; }
+        .items-center { align-items: center; }
+        .justify-end { justify-content: flex-end; }
+        .gap-2 { gap: 0.5rem; }
+        .align-middle { vertical-align: middle; }
+        .text-right { text-align: right; }
+        .min-w-full { min-width: 100%; }
+        .overflow-x-auto { overflow-x: auto; }
+        .rounded-2xl { border-radius: 1rem; }
+        .backdrop-blur-sm { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body>
+    <div class="bubblebiz-page">
+        <!-- Background Bubbles -->
+        <div class="bubbles">
+            <div class="bubble bubble1"></div>
+            <div class="bubble bubble2"></div>
+            <div class="bubble bubble3"></div>
+            <div class="bubble bubble4"></div>
+        </div>
+
+        <!-- Auth Section -->
+        <div id="authSection" class="bubblebiz-card">
+            <h1>MiniStock Desktop</h1>
+            <p class="text-center text-white/80 mb-6">Sign in to manage your inventory</p>
+
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2" for="email">Email</label>
+                    <input
+                        id="email"
+                        type="email"
+                        class="bubblebiz-input"
+                        value="demo@example.com"
+                        placeholder="you@example.com"
+                        required
+                    />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2" for="password">Password</label>
+                    <input
+                        id="password"
+                        type="password"
+                        class="bubblebiz-input"
+                        value="demopassword"
+                        placeholder="••••••••"
+                        required
+                    />
+                </div>
+                <button type="submit" class="bubblebiz-button w-full">Get Started</button>
+            </form>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="bubblebiz-card hidden">
+            <!-- Header -->
+            <header class="border-b border-white/10 pb-6 mb-6">
+                <h1 class="text-4xl md:text-5xl font-bold mb-3">MiniStock Inventory</h1>
+                <p class="text-sm md:text-base text-white/80">Desktop inventory dashboard</p>
+            </header>
+
+            <!-- Error Banner -->
+            <div id="errorBanner" class="error-banner hidden"></div>
+
+            <!-- Add Item Section -->
+            <section class="mb-6">
+                <h2>Add New Item</h2>
+                <div class="rounded-2xl bg-black/30 border border-white/10 backdrop-blur-sm p-4 md:p-5">
+                    <form id="addItemForm" class="flex flex-wrap items-center gap-4">
+                        <input
+                            id="itemName"
+                            class="bubblebiz-input flex-1 min-w-[150px]"
+                            placeholder="Name"
+                            required
+                        />
+                        <input
+                            id="itemCategory"
+                            class="bubblebiz-input flex-1 min-w-[150px]"
+                            placeholder="Category"
+                        />
+                        <input
+                            id="itemRestock"
+                            class="bubblebiz-input w-32"
+                            placeholder="Restock level"
+                            type="number"
+                            required
+                        />
+                        <button type="submit" class="bubblebiz-button">Add Item</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Search and Count -->
+            <section class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div>
+                    <h2>Current Items</h2>
+                    <p id="itemCount" class="text-xs md:text-sm text-white/70">Total: 0 items</p>
+                </div>
+                <form id="searchForm" class="flex items-center gap-2 bg-black/30 border border-white/10 rounded-full px-3 py-1">
+                    <input
+                        id="searchTerm"
+                        class="bg-transparent border-none outline-none px-2 py-1 text-xs md:text-sm placeholder:text-white/50"
+                        placeholder="Search by name or category…"
+                    />
+                    <button type="submit" class="text-xs px-3 py-1 rounded-full border border-white/25 bg-white/10 hover:bg-white/20">Search</button>
+                </form>
+            </section>
+
+            <!-- Items Table -->
+            <section>
+                <div id="loadingMessage" class="text-white/70">Loading items from server…</div>
+                <div id="noItemsMessage" class="text-white/70 hidden">No items found. Try clearing search or add a new item above.</div>
+                <div id="tableContainer" class="overflow-x-auto rounded-2xl bg-black/30 border border-white/10 backdrop-blur-sm hidden">
+                    <table id="itemsTable" class="bubblebiz-table min-w-full text-left text-sm">
+                        <thead class="bg-white/5 border-b border-white/10">
+                            <tr>
+                                <th class="px-6 py-3">Name</th>
+                                <th class="px-6 py-3">Category</th>
+                                <th class="px-6 py-3 text-right">Stock</th>
+                                <th class="px-6 py-3 text-right">Restock level</th>
+                                <th class="px-6 py-3">Last updated</th>
+                                <th class="px-6 py-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsTbody"></tbody>
+                    </table>
+
+                    <!-- Inline Adjust Bar -->
+                    <div id="adjustBar" class="adjust-form hidden">
+                        <form id="adjustForm" class="flex flex-wrap items-center gap-4">
+                            <span id="adjustLabel" class="text-sm text-white/80">Adjust stock</span>
+                            <select id="adjustMode" class="bg-black/60 border border-white/20 rounded-full px-4 py-2 text-sm">
+                                <option value="restock">Restock (+)</option>
+                                <option value="sale">Sale (-)</option>
+                            </select>
+                            <input
+                                id="adjustAmount"
+                                type="number"
+                                min="1"
+                                class="bg-black/60 border border-white/20 rounded-full px-4 py-2 w-28 text-sm"
+                                placeholder="Qty"
+                            />
+                            <button type="submit" class="bubblebiz-button">Apply</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+
+        // Shared API client functions (from shared/api-client.js)
+        async function handleResponse(res) {
+            const text = await res.text();
+            let data = null;
+
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch {
+                // not JSON, ignore
+            }
+
+            if (!res.ok) {
+                const msg =
+                    (data && data.message) ||
+                    text ||
+                    `Request failed with status ${res.status}`;
+                throw new Error(msg);
+            }
+
+            return data;
+        }
+
+        function getAuthHeaders() {
+            const headers = { "Content-Type": "application/json" };
+            const token = sessionStorage.getItem('authToken');
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            return headers;
+        }
+
+        async function apiLogin({ email, password }) {
+            const res = await fetch(`${API_BASE}/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            return handleResponse(res);
+        }
+
+        async function apiGetItems(search) {
+            const url = search
+                ? `${API_BASE}/items?search=${encodeURIComponent(search)}`
+                : `${API_BASE}/items`;
+
+            const res = await fetch(url, {
+                headers: getAuthHeaders(),
+            });
+            return handleResponse(res);
+        }
+
+        async function apiAddItem(item) {
+            const res = await fetch(`${API_BASE}/items`, {
+                method: "POST",
+                headers: getAuthHeaders(),
+                body: JSON.stringify(item),
+            });
+            return handleResponse(res);
+        }
+
+        async function apiAdjustItem(id, changeAmount) {
+            const res = await fetch(`${API_BASE}/items/${id}/adjust`, {
+                method: "POST",
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ change_amount: changeAmount }),
+            });
+            return handleResponse(res);
+        }
+
+        async function apiDeleteItem(id) {
+            const res = await fetch(`${API_BASE}/items/${id}`, {
+                method: "DELETE",
+                headers: getAuthHeaders(),
+            });
+
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text || `Delete failed with status ${res.status}`);
+            }
+        }
+
+        // State
+        let items = [];
+        let adjustingId = null;
+
+        // Helper functions
+        function showError(message) {
+            const banner = document.getElementById('errorBanner');
+            banner.textContent = message;
+            banner.classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('errorBanner').classList.add('hidden');
+        }
+
+        function updateItemCount() {
+            const count = document.getElementById('itemCount');
+            count.textContent = `Total: ${items.length} item${items.length !== 1 ? 's' : ''}`;
+        }
+
+        function renderItemsTable() {
+            const tbody = document.getElementById('itemsTbody');
+            const tableContainer = document.getElementById('tableContainer');
+            const loadingMessage = document.getElementById('loadingMessage');
+            const noItemsMessage = document.getElementById('noItemsMessage');
+
+            if (items.length === 0) {
+                tableContainer.classList.add('hidden');
+                loadingMessage.classList.add('hidden');
+                noItemsMessage.classList.remove('hidden');
+                return;
+            }
+
+            loadingMessage.classList.add('hidden');
+            noItemsMessage.classList.add('hidden');
+            tableContainer.classList.remove('hidden');
+
+            tbody.innerHTML = items.map((item, index) => {
+                const stock = item.stock_quantity ?? 0;
+                const restock = item.restock_level ?? 0;
+                const low = stock <= restock;
+
+                return `
+                    <tr class="${index % 2 === 0 ? '' : 'bg-white/[0.03]'}">
+                        <td class="px-6 py-3 align-middle">
+                            <span class="font-medium">${item.name}</span>
+                        </td>
+                        <td class="px-6 py-3 align-middle">
+                            <span class="inline-flex items-center rounded-full bg-white/5 px-3 py-1 text-xs border border-white/10">
+                                ${item.category || 'Uncategorized'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-3 text-right align-middle ${low ? 'low-stock-text' : ''}">
+                            ${stock}
+                        </td>
+                        <td class="px-6 py-3 text-right align-middle">
+                            ${restock}
+                        </td>
+                        <td class="px-6 py-3 align-middle text-white/70">
+                            ${item.last_updated ? new Date(item.last_updated).toLocaleString() : '-'}
+                        </td>
+                        <td class="px-6 py-3 text-right align-middle">
+                            <div class="flex justify-end gap-2">
+                                <button onclick="toggleAdjust('${item.id}')" class="text-xs px-3 py-1 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 transition">
+                                    ${adjustingId === item.id ? 'Cancel' : 'Adjust'}
+                                </button>
+                                <button onclick="deleteItem('${item.id}', '${item.name.replace(/'/g, "\\'")}')" class="text-xs px-3 py-1 rounded-full border border-red-400/70 bg-red-500/30 hover:bg-red-500/50 transition">
+                                    Delete
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Event handlers
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            console.log('Login attempt:', { email, password: password ? '***' : '' });
+
+            try {
+                const result = await apiLogin({ email, password });
+                console.log('Login success:', result);
+                sessionStorage.setItem('authToken', result.token);
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                await loadItems();
+            } catch (error) {
+                console.error('Login error:', error);
+                showError(error.message);
+            }
+        }
+
+        async function handleAddItem(e) {
+            e.preventDefault();
+            const name = document.getElementById('itemName').value.trim();
+            const category = document.getElementById('itemCategory').value.trim();
+            const restockLevel = parseInt(document.getElementById('itemRestock').value);
+
+            if (!name) return;
+
+            try {
+                hideError();
+                await apiAddItem({
+                    name,
+                    category: category || undefined,
+                    restock_level: restockLevel || 0
+                });
+                document.getElementById('addItemForm').reset();
+                await loadItems();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function handleSearch(e) {
+            e.preventDefault();
+            await loadItems(document.getElementById('searchTerm').value.trim());
+        }
+
+        async function handleAdjust(e) {
+            e.preventDefault();
+            const amount = parseInt(document.getElementById('adjustAmount').value);
+            const mode = document.getElementById('adjustMode').value;
+
+            if (!amount || !adjustingId) return;
+
+            const changeAmount = mode === 'sale' ? -amount : amount;
+
+            try {
+                hideError();
+                await apiAdjustItem(adjustingId, changeAmount);
+                adjustingId = null;
+                document.getElementById('adjustBar').classList.add('hidden');
+                document.getElementById('adjustForm').reset();
+                await loadItems();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function toggleAdjust(id) {
+            if (adjustingId === id) {
+                adjustingId = null;
+                document.getElementById('adjustBar').classList.add('hidden');
+            } else {
+                adjustingId = id;
+                const item = items.find(i => i.id === id);
+                document.getElementById('adjustLabel').textContent = `Adjust stock for ${item.name}`;
+                document.getElementById('adjustBar').classList.remove('hidden');
+            }
+            renderItemsTable();
+        }
+
+        async function deleteItem(id, name) {
+            if (!confirm(`Delete item "${name}"? This cannot be undone.`)) return;
+
+            try {
+                hideError();
+                await apiDeleteItem(id);
+                await loadItems();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function loadItems(search = '') {
+            console.log('Loading items with search:', search);
+            try {
+                hideError();
+                document.getElementById('loadingMessage').classList.remove('hidden');
+                document.getElementById('tableContainer').classList.add('hidden');
+                document.getElementById('noItemsMessage').classList.add('hidden');
+
+                const result = await apiGetItems(search);
+                console.log('Items loaded:', result);
+                items = result.data || [];
+                updateItemCount();
+                renderItemsTable();
+            } catch (error) {
+                console.error('Error loading items:', error);
+                showError(error.message);
+                document.getElementById('loadingMessage').classList.add('hidden');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, attaching event listeners');
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('addItemForm').addEventListener('submit', handleAddItem);
+            document.getElementById('searchForm').addEventListener('submit', handleSearch);
+            document.getElementById('adjustForm').addEventListener('submit', handleAdjust);
+
+            // Check if already logged in
+            if (sessionStorage.getItem('authToken')) {
+                console.log('Found existing token, showing dashboard');
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                loadItems();
+            } else {
+                console.log('No token found, showing login');
+            }
+        });
+    </script>
+</body>
+</html>
