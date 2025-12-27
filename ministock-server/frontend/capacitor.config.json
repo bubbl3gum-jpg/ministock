@@ -1,0 +1,9 @@
+{
+  "appId": "com.ministock.app",
+  "appName": "Ministock",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}

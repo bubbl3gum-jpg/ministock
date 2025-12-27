@@ -1,5 +1,7 @@
 // shared/api-client.js
-const API_BASE = "http://localhost:3000";
+const API_BASE = "http://10.0.2.2:3000"; 
+
+console.log("🔥 API CLIENT TARGETING:", API_BASE);
 
 function getAuthHeaders() {
     const headers = { "Content-Type": "application/json" };
@@ -91,24 +93,16 @@ export async function deleteItem(id) {
 // --- EXPORT (NEW) ---
 
 export async function exportItems() {
-    // If your backend route is /api/export
+    
     const res = await fetch(`${API_BASE}/api/export`, {
         method: "GET",
         headers: getAuthHeaders(),
     });
 
     if (!res.ok) {
-        throw new Error("Failed to download export file");
+        throw new Error("Failed to fetch export data");
     }
 
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "inventory.csv";
-    document.body.appendChild(a);
-    a.click();
-    
-    a.remove();
-    window.URL.revokeObjectURL(url);
+
+    return res.text(); 
 }

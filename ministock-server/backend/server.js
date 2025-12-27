@@ -11,11 +11,16 @@ const PORT = 3000; // MUST match the port your client is requesting!
 // --- Serve Static Frontend Files ---
 // This tells Express to serve all files from the 'frontend' directory
 // The path is constructed to go up one level from 'backend' and then into 'frontend'
+app.use((req, res, next) => {
+    console.log(`📡 CONNECTION INCOMING: ${req.method} ${req.url}`);
+    next();
+});
+
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 // Middleware
 app.use(cors({
-    origin: 'http://localhost:5173', // Vite dev server
+    origin: true, // Allow any origin (easiest for development)
     credentials: true
 }));
 
@@ -59,8 +64,8 @@ app.use((err, req, res, next) => {
 
 // Start the server with a safe error handler
 // Start the server with a safe error handler
-const server = app.listen(PORT, () => {
-    console.log(`✅ Server running on http://localhost:${PORT}`);
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
     console.log(`📝 Health check: http://localhost:${PORT}/api/health`);
 });
 

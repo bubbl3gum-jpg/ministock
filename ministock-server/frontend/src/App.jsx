@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import "./BubbleBiz.css"; 
-// We import directly from api-client logic now, bypassing the old pages
-import { login, register, getItems, addItem, adjustItem, deleteItem, exportItems } from "./api"; // api.js exports from shared/api-client
+// 1. ADD THESE IMPORTS FOR ANDROID
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import { App as CapacitorApp } from '@capacitor/app';
+// We import directly from api-client logic
+import { login, register, getItems, addItem, adjustItem, deleteItem, exportItems } from "./api"; 
 
 export default function App() {
   const [view, setView] = useState("login"); // 'login' | 'register' | 'dashboard'
@@ -24,12 +28,29 @@ export default function App() {
   const [adjustMode, setAdjustMode] = useState("restock");
 
   // Check for existing login on load
+  // Security: Logout on Startup AND on Resume
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      setView("dashboard");
-      fetchItems();
-    }
+    // 1. Define the listener for when App wakes up
+    const setupSecurityListener = async () => {
+      await CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) {
+          console.log("App resumed from background. Forcing logout.");
+          handleLogout(); // Force logout when user switches back to app
+        }
+      });
+    };
+
+    // 2. Initialize the listener
+    setupSecurityListener();
+
+    // 3. Force logout on "Cold Start" (Fresh launch)
+    // (Instead of checking for a token, we clear it to be safe)
+    handleLogout(); 
+
+    // Cleanup listener when component unmounts (optional but good practice)
+    return () => {
+      CapacitorApp.removeAllListeners();
+    };
   }, []);
 
   // --- Actions ---
@@ -44,7 +65,6 @@ export default function App() {
         setView("dashboard");
         fetchItems();
       } else {
-        // Register flow
         await register({ email, password });
         setView("login");
         setError("Account created! Please log in.");
@@ -102,6 +122,37 @@ export default function App() {
     try { await deleteItem(id); fetchItems(); } 
     catch(err) { setError(err.message); }
   }
+
+  // --- 2. ADD THIS NEW EXPORT FUNCTION ---
+  const handleExport = async () => {
+    try {
+      // Get the CSV data from the API
+      const response = await exportItems(); 
+      
+      // Convert to text string
+      const csvData = typeof response === 'string' ? response : await response.text();
+
+      // Write to Phone Cache
+      const fileName = 'inventory_export.csv';
+      const savedFile = await Filesystem.writeFile({
+          path: fileName,
+          data: csvData,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8,
+      });
+
+      // Open Share Menu
+      await Share.share({
+          title: 'Export Inventory',
+          url: savedFile.uri,
+          dialogTitle: 'Save CSV File',
+      });
+
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Export Failed: " + error.message);
+    }
+  };
 
   // --- RENDER ---
 
@@ -167,7 +218,8 @@ export default function App() {
               <p style={{ margin: 0, opacity: 0.8 }}>Manage your items</p>
             </div>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button onClick={exportItems} className="bubblebiz-button" style={{ background: "rgba(34, 197, 94, 0.2)", border: "1px solid rgba(34, 197, 94, 0.5)", color: "#dcfce7" }}>
+              {/* 3. UPDATE THIS BUTTON TO USE handleExport */}
+              <button onClick={handleExport} className="bubblebiz-button" style={{ background: "rgba(34, 197, 94, 0.2)", border: "1px solid rgba(34, 197, 94, 0.5)", color: "#dcfce7" }}>
                 Export CSV
               </button>
               <button onClick={handleLogout} className="bubblebiz-button" style={{ background: "rgba(239, 68, 68, 0.2)", border: "1px solid rgba(239, 68, 68, 0.5)", color: "#fee2e2" }}>
