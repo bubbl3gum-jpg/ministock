@@ -1,5 +1,5 @@
 // shared/api-client.js
-const API_BASE = "http://10.0.2.2:3000"; 
+const API_BASE = "http://192.168.0.121:3000"; 
 
 console.log("🔥 API CLIENT TARGETING:", API_BASE);
 
@@ -93,7 +93,7 @@ export async function deleteItem(id) {
 // --- EXPORT (NEW) ---
 
 export async function exportItems() {
-    
+
     const res = await fetch(`${API_BASE}/api/export`, {
         method: "GET",
         headers: getAuthHeaders(),
