@@ -1,9 +1,13 @@
 // ministock-server/db.js
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
+const path = require('path');
 
 // Use a file-based database. If the file doesn't exist, it will be created.
-const DB_SOURCE = 'ministock.sqlite';
+// Resolve relative to this file (not the process cwd) so the path is stable
+// no matter where the server is launched from (e.g. Render runs from the repo root).
+// DB_DIR can point at a mounted persistent disk in production.
+const DB_SOURCE = path.join(process.env.DB_DIR || __dirname, 'ministock.sqlite');
 
 const db = new sqlite3.Database(DB_SOURCE, (err) => {
     if (err) {

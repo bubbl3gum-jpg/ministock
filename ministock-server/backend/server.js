@@ -6,17 +6,24 @@ const db = require('./db'); // Initialize database connection first
 const router = require('./api'); // Loads the router defined in api.js
 const authRouter = require('./auth'); // Auth routes (register, login, profile)
 const app = express();
-const PORT = 3000; // MUST match the port your client is requesting!
+// Use the platform-provided port in production (Render/Heroku/etc.), fall back to 3000 locally.
+const PORT = process.env.PORT || 3000;
 
 // --- Serve Static Frontend Files ---
-// This tells Express to serve all files from the 'frontend' directory
-// The path is constructed to go up one level from 'backend' and then into 'frontend'
+// In production we serve the built Vite output (frontend/dist). Fall back to the raw
+// frontend folder if a build hasn't been produced yet (keeps local dev forgiving).
+const fs = require('fs');
+const DIST_DIR = path.join(__dirname, '..', 'frontend', 'dist');
+const FRONTEND_DIR = fs.existsSync(DIST_DIR)
+    ? DIST_DIR
+    : path.join(__dirname, '..', 'frontend');
+
 app.use((req, res, next) => {
     console.log(`📡 CONNECTION INCOMING: ${req.method} ${req.url}`);
     next();
 });
 
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
+app.use(express.static(FRONTEND_DIR));
 
 // Middleware
 app.use(cors({
@@ -49,7 +56,7 @@ app.use('/api', router);
 // --- Fallback for Single-Page-Application ---
 // This sends the index.html for any GET request that doesn't match an API route or a static file.
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
+    res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
 });
 
 // Global error handler

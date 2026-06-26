@@ -1,0 +1,20 @@
+# Render Blueprint for the MiniStock ERP (Node/Express + SQLite + Vite/React).
+# Render reads this automatically when you create a "Blueprint" from this repo.
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: ministock-erp
+    runtime: node
+    plan: free
+    # The app lives in a subfolder of the repo.
+    rootDir: ministock-server
+    # Install backend + frontend deps, then build the React frontend into frontend/dist.
+    # --include=dev ensures Vite (a devDependency) is installed even if NODE_ENV=production.
+    buildCommand: npm install --prefix backend && npm install --prefix frontend --include=dev && npm run build --prefix frontend
+    # Express serves both the API and the built frontend on the port Render provides.
+    startCommand: node backend/server.js
+    healthCheckPath: /api/health
+    envVars:
+      # sqlite3 5.x ships prebuilt binaries for Node 20 — pin it to avoid native-build surprises.
+      - key: NODE_VERSION
+        value: "20.18.1"

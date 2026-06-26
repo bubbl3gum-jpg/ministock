@@ -1,5 +1,9 @@
 // shared/api-client.js
-const API_BASE = "http://192.168.0.121:3000"; 
+// Default to same-origin ("") so the web build talks to whatever host serves it
+// (works on localhost and on the deployed URL). Native/dev cross-origin builds can
+// override by setting VITE_API_BASE at build time (e.g. http://192.168.0.121:3000).
+const API_BASE =
+    (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_BASE) || "";
 
 console.log("🔥 API CLIENT TARGETING:", API_BASE);
 
